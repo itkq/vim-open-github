@@ -18,7 +18,7 @@ class GithubUrl
 
   def generate(*args)
     status = blame_mode?(args) ? 'blame' : 'blob'
-    host, path = parse_remote_origin
+    host, path = parse_remote
     revision   = args.first || current_head
     revision   = to_revision(revision) if is_branch?(revision)
 
@@ -35,15 +35,17 @@ class GithubUrl
     args.delete('-b') || args.delete('--blame')
   end
 
-  def parse_remote_origin
-    if remote_origin =~ /^(http|https|ssh):\/\//
-      uri = URI.parse(remote_origin)
+  def parse_remote
+    remote = remote_upstream ? remote_upstream : remote_origin
+
+    if remote =~ /^(http|https|ssh):\/\//
+      uri = URI.parse(remote)
       [uri.host, uri.path]
-    elsif remote_origin =~ /^[^:\/]+:\/?[^:\/]+\/[^:\/]+$/
-      host, path = remote_origin.split(":")
+    elsif remote =~ /^[^:\/]+:\/?[^:\/]+\/[^:\/]+$/
+      host, path = remote.split(":")
       [host.split("@").last, path]
     else
-      raise "Not supported origin url: #{remote_origin}"
+      raise "Not supported origin url: #{remote}"
     end
   end
 
@@ -72,6 +74,10 @@ class GithubUrl
 
   def remote_origin
     @remote_origin ||= `git config remote.origin.url`.strip
+  end
+
+  def remote_upstream
+    @remote_upstream ||= `git config remote.upstream.url`.strip
   end
 
   def repository_root
